@@ -2,14 +2,6 @@
 
 namespace TextGame.Core
 {
-    public enum SpecialGimmickType
-    {
-        None,
-        DoppelgangerCurse,
-        Bleeding,
-        Terror
-    }
-
     [CreateAssetMenu(fileName = "NewEnemy", menuName = "TextGame/Enemy Data")]
     public class EnemyData : ScriptableObject
     {
@@ -22,30 +14,30 @@ namespace TextGame.Core
         public int maxHp = 2;
         public int damage = 5;
 
-        [Header("특수 기믹")]
-        public SpecialGimmickType gimmick = SpecialGimmickType.None;
+        [Header("특수 기믹 (EnemyGimmick 에셋 등록)")]
+        public EnemyGimmick gimmick;
 
         [Header("상황별 고유 지문")]
-        [TextArea(2, 4)] public string encounterText;  // 조우 지문
-        [TextArea(2, 4)] public string ambushText;     // 탐지 실패(기습) 시 지문
-        [TextArea(2, 4)] public string attackText;     // 적이 플레이어를 공격할 때 지문
-        [TextArea(2, 4)] public string hitText;        // 적이 플레이어에게 피격당할 때 지문
-        [TextArea(2, 4)] public string deathText;      // 적 처치(승리) 시 지문
+        [TextArea(2, 4)] public string encounterText;  // 최초 조우 지문
+        [TextArea(2, 4)] public string ambushText;     // 탐지 실패(기습) 지문
+        [TextArea(2, 4)] public string attackText;     // 적 공격 시 지문
+        [TextArea(2, 4)] public string hitText;        // 적 피격 시 지문
+        [TextArea(2, 4)] public string deathText;      // 적 처치(사망) 지문
 
+        // 런타임용 복제본 생성
         public EnemyData CreateInstance()
         {
             return Instantiate(this);
         }
 
-        public void TriggerGimmick(Player player, CoC_Result result)
+        // 해당 타이밍에 등록된 기믹이 있는지 검사하고 발동
+        public string CheckAndTriggerGimmick(GimmickTriggerTime timing, Player player)
         {
-            switch (gimmick)
+            if (gimmick != null && gimmick.triggerTime == timing)
             {
-                case SpecialGimmickType.DoppelgangerCurse:
-                    player.Sanity -= 5;
-                    player.Madness += 3;
-                    break;
+                return gimmick.Execute(player);
             }
+            return null;
         }
     }
 }

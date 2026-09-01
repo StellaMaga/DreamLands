@@ -8,7 +8,7 @@ namespace TextGame.Core
         private EnemyData enemy;
         private GameManager manager;
 
-        // [외부 진입점] Resources/Enemies 안의 적 중 하나를 무작위 추첨
+        // [외부 진입점] Resources/Enemies 안의 모든 적 중 하나를 무작위 추첨
         public static EventStep Random_Battle(Player player)
         {
             EnemyData[] allEnemies = Resources.LoadAll<EnemyData>("Enemies");
@@ -101,9 +101,14 @@ namespace TextGame.Core
         {
             CoC_Result result = Battle_System.SAN_Check(player, out string sanMessage);
 
+            // [기믹 발동 1: 이성 실패 시]
             if (result == CoC_Result.Failure || result == CoC_Result.Fumble)
             {
-                enemy.TriggerGimmick(player, result);
+                string gimmickMsg = enemy.CheckAndTriggerGimmick(GimmickTriggerTime.OnSanityFail, player);
+                if (!string.IsNullOrEmpty(gimmickMsg))
+                {
+                    sanMessage += $"\n\n{gimmickMsg}";
+                }
             }
 
             if (manager.CheckPlayerDeath()) return;
@@ -150,6 +155,17 @@ namespace TextGame.Core
         {
             bool isSuccess = Battle_System.REJ_Check(player, enemy, out CoC_Result result);
 
+            // [기믹 발동 2: 적 공격 적중(방어 실패) 시]
+            string gimmickMsg = "";
+            if (!isSuccess)
+            {
+                string extra = enemy.CheckAndTriggerGimmick(GimmickTriggerTime.OnAttackHit, player);
+                if (!string.IsNullOrEmpty(extra))
+                {
+                    gimmickMsg = $"\n\n{extra}";
+                }
+            }
+
             if (manager.CheckPlayerDeath()) return;
 
             if (isSuccess)
@@ -178,7 +194,7 @@ namespace TextGame.Core
 
                         {{enemy.attackText}}
                         적의 공격을 막아내지 못했습니다!
-                        {{Game_System.Red($"[정신력 -{enemy.damage}]")}} (남은 정신력: {{player.Mental}})
+                        {{Game_System.Red($"[정신력 -{enemy.damage}]")}} (남은 정신력: {{player.Mental}}){{gimmickMsg}}
 
                         비틀거리면서도 전열을 가다듬습니다.
                         """,
@@ -204,6 +220,12 @@ namespace TextGame.Core
                     return;
                 }
 
+                // [기믹 발동 3: 플레이어 공격 시 적 반사 등]
+                string gimmickMsg = enemy.CheckAndTriggerGimmick(GimmickTriggerTime.OnEnemyDamaged, player);
+                string extraGimmickText = string.IsNullOrEmpty(gimmickMsg) ? "" : $"\n\n{gimmickMsg}";
+
+                if (manager.CheckPlayerDeath()) return;
+
                 string successMsg = (result == CoC_Result.Jackpot)
                     ? $"{Game_System.Green("[대성공!]")} 꿈의 법칙을 강력하게 비틀어 {enemy.enemyName}에게 큰 충격을 주었습니다! (데미지: 2)"
                     : $"{Game_System.Green("[간섭 성공]")} 현실을 비틀어 {enemy.enemyName}에게 타격을 입혔습니다. (데미지: 1)";
@@ -214,7 +236,8 @@ namespace TextGame.Core
                         '결국 이 모든 것이 꿈이라면 나도 간섭할 수 있지 않을까?'
 
                         {{successMsg}}
-                        {{enemy.hitText}}
+                        {{enemy.hitText}}{{extraGimmickText}}
+
                         분노한 {{enemy.enemyName}}이(가) 반격을 준비합니다!
                         """,
                     opt1: "[거부(REJ) 판정 진행 ▶]",
@@ -244,6 +267,12 @@ namespace TextGame.Core
         // 승리 및 도망
         private void Win_Battle()
         {
+            // [기믹 발동 4: 적 사망 시 자폭 등]
+            string deathGimmick = enemy.CheckAndTriggerGimmick(GimmickTriggerTime.OnDeath, player);
+            string deathGimmickText = string.IsNullOrEmpty(deathGimmick) ? "" : $"\n\n{deathGimmick}";
+
+            if (manager.CheckPlayerDeath()) return;
+
             int starlight = Game_System.Roll_D6();
             int will = Game_System.Roll_D6();
 
@@ -253,7 +282,7 @@ namespace TextGame.Core
             EventStep step = new EventStep(
                 title: $"[전투 승리! - {enemy.enemyName}]",
                 bodyText: $$"""
-                    {{enemy.deathText}}
+                    {{enemy.deathText}}{{deathGimmickText}}
 
                     {{Game_System.Green($"[전리품 획득] 별빛 +{starlight} | 의지 +{will}")}}
                     """,
