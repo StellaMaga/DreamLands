@@ -628,9 +628,6 @@ MonoBehaviour:
   dialogueText: {fileID: 1133796511}
   nextButton: {fileID: 350628916}
   nextButtonText: {fileID: 1775784442}
-  nameInputPanel: {fileID: 1714997552}
-  nameInputField: {fileID: 605675112}
-  nameSubmitButton: {fileID: 1744959529}
   gameManager: {fileID: 660427865}
 --- !u!4 &406193674
 Transform:
@@ -1293,7 +1290,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 717698814}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
@@ -1828,10 +1825,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u200B"
+  m_text: "<u>\uC744</u>\u200B"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 761331eb83a712240b2386cf5ef37f28, type: 2}
+  m_sharedMaterial: {fileID: -7238633507101206641, guid: 761331eb83a712240b2386cf5ef37f28, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

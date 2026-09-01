@@ -53,7 +53,7 @@ namespace TextGame.Core
             return playerStat >= requiredStat;
         }
 
-        // UI 선택지용 텍스트 생성기
+        // [UI 선택지용 텍스트 생성기]
         public static string FormatOption(string optionText, string statName, int playerStat, int requiredStat)
         {
             if (playerStat >= requiredStat)
@@ -80,11 +80,16 @@ namespace TextGame.Core
 
         // [D&D 방식 판정 (주사위 + 스탯/10 + 행운/10)]
         public static bool DD_Check(int dc, string statName, int statValue, Player player, out string resultMessage)
-        {
-            int dice = Roll_D20();
-            int statModifier = statValue / 10;
-            int luckModifier = player.Luck / 10;
-            int totalRoll = dice + statModifier + luckModifier;
+        {   
+            // dc = Difficulty Class (난이도 기준치)
+            // statValue = 해당 스탯 값
+            // player = 플레이어 객체 (행운 수치 확인용)
+            // resultMessage = 판정 결과 메시지
+
+            int dice = Roll_D20();                  // D20 주사위 굴림
+            int statModifier = statValue / 10;      // 스탯 보정치 계산 (스탯 값 / 10)
+            int luckModifier = player.Luck / 10;    // 행운 보정치 계산 (행운 값 / 10)
+            int totalRoll = dice + statModifier + luckModifier; 
 
             bool isSuccess = (dice == 20) || (dice != 1 && totalRoll >= dc);
             string statusText = isSuccess ? Green("성공") : Red("실패");

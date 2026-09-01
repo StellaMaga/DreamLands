@@ -3,12 +3,12 @@
     public static class Battle_System
     {
         // 1. [탐지 판정]
-        public static bool DET_Check(Player player, Enemy enemy, out string message)
+        public static bool DET_Check(Player player, EnemyData enemy, out string message)
         {
-            return Game_System.Stat_Check("탐지(DET)", enemy.Detection, player.Detection, out message);
+            return Game_System.Stat_Check("탐지(DET)", enemy.detection, player.Detection, out message);
         }
 
-        // 2. [이성 판정] - CoC_Check에 player.Sanity 스탯 적용
+        // 2. [이성 판정]
         public static CoC_Result SAN_Check(Player player, out string message)
         {
             CoC_Result result = Game_System.CoC_Check(player.Sanity, 0);
@@ -16,7 +16,7 @@
             switch (result)
             {
                 case CoC_Result.Jackpot:
-                    player.Will += 1; // 잭팟: 마음을 완벽히 다잡아 의지 +1
+                    player.Will += 1;
                     message = Game_System.Green("[이성 판정 : 잭팟] 공포를 완벽하게 극복했습니다! (의지 +1)");
                     break;
 
@@ -45,28 +45,27 @@
             return result;
         }
 
-        // 3. [거부 판정] (성공 시 true, 실패 시 false 및 플레이어 정신력 차감)
-        public static bool REJ_Check(Player player, Enemy enemy, out CoC_Result result)
+        // 3. [거부 판정]
+        public static bool REJ_Check(Player player, EnemyData enemy, out CoC_Result result)
         {
             result = Game_System.CoC_Check(player.Rejection, 0);
 
             if (result == CoC_Result.Jackpot || result == CoC_Result.Success)
             {
-                return true; // 방어 성공
+                return true;
             }
 
-            // 방어 실패시 적 데미지만큼 정신력 차감
-            player.Mental -= enemy.Damage;
+            player.Mental -= enemy.damage;
             return false;
         }
 
-        // 4. [간섭 판정] (성공 시 true 및 적 HP 차감)
-        public static int IFN_Check(Player player, Enemy enemy, out CoC_Result result)
+        // 4. [간섭 판정]
+        public static int IFN_Check(Player player, EnemyData enemy, out CoC_Result result)
         {
-            result = Game_System.CoC_Check(player.Interference, 0); 
-            if (result == CoC_Result.Jackpot) { enemy.HP -= 2; return 2; }
-            if (result == CoC_Result.Success) { enemy.HP -= 1; return 1; }
-            return 0; 
+            result = Game_System.CoC_Check(player.Interference, 0);
+            if (result == CoC_Result.Jackpot) { enemy.maxHp -= 2; return 2; }
+            if (result == CoC_Result.Success) { enemy.maxHp -= 1; return 1; }
+            return 0;
         }
     }
 }
