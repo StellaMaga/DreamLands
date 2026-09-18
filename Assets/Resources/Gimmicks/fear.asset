@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: fear
   m_EditorClassIdentifier: Assembly-CSharp::TextGame.Core.EnemyGimmick
   triggerTime: 0
-  gimmickName: "\uD2B9\uC218 \uAE30\uBBF9"
+  gimmickName: "\uD53C\uC5B4"
   effectDescription: "\uAE30\uAD34\uD55C \uC601\uD5A5\uC73C\uB85C \uD53C\uD574\uB97C
     \uC785\uC2B5\uB2C8\uB2E4."
   mentalChange: 0

@@ -1,76 +1,9 @@
 ﻿using System;
-using UnityEngine;
 using TextGame.Core;
-
-namespace TextGame.Core
-{
-    public class EventStep
-    {
-        public string Title;
-        public string BodyText;
-        public string Option1Text;
-        public string Option2Text;
-        public string Option3Text; // 3번 선택지 추가
-
-        public Action<Player, GameManager> OnOption1;
-        public Action<Player, GameManager> OnOption2;
-        public Action<Player, GameManager> OnOption3; // 3번 액션 추가
-
-        public EventStep(string title, string bodyText,
-                         string opt1 = "다음 ▶", string opt2 = null, string opt3 = null,
-                         Action<Player, GameManager> onOption1 = null,
-                         Action<Player, GameManager> onOption2 = null,
-                         Action<Player, GameManager> onOption3 = null)
-        {
-            Title = title;
-            BodyText = bodyText;
-            Option1Text = opt1;
-            Option2Text = opt2;
-            Option3Text = opt3;
-            OnOption1 = onOption1;
-            OnOption2 = onOption2;
-            OnOption3 = onOption3;
-        }
-
-        public static EventStep Multi_Step(string title, DialogueNode[] dialogues, Action<Player, GameManager> onComplete)
-        {
-            return Step_Helper(title, dialogues, 0, onComplete);
-        }
-
-        private static EventStep Step_Helper(string title, DialogueNode[] dialogues, int index, Action<Player, GameManager> onComplete)
-        {
-            var node = dialogues[index];
-            bool isLast = index >= dialogues.Length - 1;
-
-            string formattedBody = string.IsNullOrEmpty(node.Speaker)
-                ? node.Text
-                : $"{node.Speaker}\n{node.Text}";
-
-            return new EventStep(
-                title: title,
-                bodyText: formattedBody,
-                opt1: isLast ? "확인" : "다음 ▶",
-                opt2: null,
-                opt3: null,
-                onOption1: (player, manager) =>
-                {
-                    if (isLast)
-                    {
-                        onComplete?.Invoke(player, manager);
-                    }
-                    else
-                    {
-                        manager.Execute_EventStep(Step_Helper(title, dialogues, index + 1, onComplete));
-                    }
-                }
-            );
-        }
-    }
-}
 
 namespace TextGame.Events.Shallow_Dream
 {
-    // [서브 이벤트 메인 클래스 - partial]
+    // [1장 얕은 꿈 무작위 서브 이벤트 추첨소]
     public partial class Sub_Events
     {
         private static System.Random rand = new System.Random();

@@ -13,6 +13,8 @@ namespace TextGame.Core
         public string StatType2;
         public int BonusValue2;
         public bool IsDiceBonus;   // 악 성향을 판별
+
+
     }
 
     // [크툴루 성공 등급]
@@ -95,7 +97,7 @@ namespace TextGame.Core
             string statusText = isSuccess ? Green("성공") : Red("실패");
 
             resultMessage = $"목표 [{dc}] | 판정 [{totalRoll}] (D20🎲[{dice}] + {statName}[{statModifier}] + 행운[{luckModifier}])\n" +
-                            $"결과 ➔ [{statusText}]";
+                            $"결과 -> [{statusText}]";
 
             return isSuccess;
         }
