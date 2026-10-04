@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using TextGame.Core;
 using TextGame.Events.Shallow_Dream;
+using TextGame.Events.Bond_Events;
+using TextGame.Events.Explore;
 
 namespace TextGame.Stages
 {
@@ -21,8 +23,10 @@ namespace TextGame.Stages
             {
                 return new EventStep(
                     title: "[ 1장 탐험 종료 : 얕은 꿈의 경계 ]",
-                    bodyText: "얕은 꿈의 끝자락에 다다랐습니다.\n" +
-                              "안개 너머로 더 깊은 차원의 꿈(드림랜드)으로 향하는 문이 아른거립니다.",
+                    bodyText: """
+                        얕은 꿈의 끝자락에 다다랐습니다.
+                        안개 너머로 더 깊은 차원의 꿈(드림랜드)으로 향하는 문이 아른거립니다.
+                        """,
                     opt1: "다음 단계로 ▶",
                     opt2: null,
                     onOption1: (p, manager) =>
@@ -46,8 +50,8 @@ namespace TextGame.Stages
                 return Main_Events.White_Rabbit(player);
             }
 
-            // [우선순위 3] 7의 배수 회차 확정 공용 이벤트: 화로와 여인
-            if (eventCount % 7 == 0)
+            // [우선순위 3] 7회차 공용 이벤트: 화로와 여인
+            if (eventCount == 7)
             {
                 return Rest_Events.Hestia(player);
             }
@@ -70,45 +74,18 @@ namespace TextGame.Stages
             // [2. 탐험 이벤트 : 35% 확률 (51 ~ 85)]
             else if (rolledChance <= 85)
             {
-                return GetExploreEvent(player);
+                return Explore_Manager.Random_Explore(player);
             }
             // [3. 인연 이벤트 : 10% 확률 (86 ~ 95)]
             else if (rolledChance <= 95)
             {
-                return GetBondEvent(player);
+                return Bond_Events.Random_Event(player);
             }
             // [4. 전투 이벤트 : 5% 확률 (96 ~ 100)]
             else
             {
                 return Battle_Event.Random_Battle(player);
             }
-        }
-
-
-        // --- 탐험 이벤트 임시 연동 ---
-        private static EventStep GetExploreEvent(Player player)
-        {
-            return new EventStep(
-                title: "[탐험 이벤트 : 미지의 풍경]",
-                bodyText: "주변의 안개가 걷히며 기묘한 구조물이 모습을 드러냅니다.\n이곳의 풍경은 무언가 다른 규칙으로 움직이는 듯합니다.",
-                opt1: "1. 조사해 본다",
-                opt2: "2. 지나친다",
-                onOption1: (p, mgr) => mgr.Show_Main_UI(),
-                onOption2: (p, mgr) => mgr.Show_Main_UI()
-            );
-        }
-
-        // --- 인연 이벤트 임시 연동 ---
-        private static EventStep GetBondEvent(Player player)
-        {
-            return new EventStep(
-                title: "[인연 이벤트 : 낯선 방랑자]",
-                bodyText: "안개 너머에서 누군가의 발소리가 들려옵니다.\n그는 당신을 경계하면서도 조심스럽게 시선을 마주합니다.",
-                opt1: "1. 말을 건넨다",
-                opt2: "2. 거리를 둔다",
-                onOption1: (p, mgr) => mgr.Show_Main_UI(),
-                onOption2: (p, mgr) => mgr.Show_Main_UI()
-            );
         }
     }
 }

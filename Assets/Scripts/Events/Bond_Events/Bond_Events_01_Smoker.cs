@@ -1,23 +1,27 @@
 ﻿using UnityEngine;
 using TextGame.Core;
 
-namespace TextGame.Events.Shallow_Dream
+namespace TextGame.Events.Bond_Events
 {
-    public partial class Sub_Events
+    public static class Bond_Events_01_Smoker
     {
-        private static EventStep Sub_Event_12_Smoker(Player player)
+        public static EventStep Get_Step(Player player)
         {
-            string title = "[서브 이벤트 12: 흡연자]";
+            string title = "[인연 이벤트 1: 흡연자]";
             string bodyText = "담배 연기가 안개를 밀어낼 정도로 가득한 곳에서 한 남자가 담배를 피우고 있다.\n\n" +
                               "'여기선 암 걸릴 걱정 없이 피워도 된다는 걸 너무 늦게 알았지.'\n" +
                               "남자의 몸은 부분부분 재가 되어 부스러지고 있었다.\n\n" +
                               "'이것도 인연인데 한 대 피우겠나?'";
+
+            // 필요 시 삽화 이미지가 준비되면 Resources/Event_Image/Smoker 경로로 로드 가능
+            // Sprite smokerSprite = Resources.Load<Sprite>("Event_Image/Smoker");
 
             return new EventStep(
                 title: title,
                 bodyText: bodyText,
                 opt1: "1. 돛대를 받아들인다",
                 opt2: "2. 비흡연자이다",
+                opt3: null,
                 onOption1: (p, mgr) =>
                 {
                     p.Sanity -= 4;
@@ -46,7 +50,11 @@ namespace TextGame.Events.Shallow_Dream
                         new(Game_System.Green("[+ 아이템 획득: 돛대]"))
                     };
                     mgr.Execute_EventStep(EventStep.Multi_Step(title, nodes, (p2, mgr2) => mgr2.Show_Main_UI()));
-                }
+                },
+                onOption3: null
+            // illustration: smokerSprite,
+            // imgPos: IllustrationPosition.Middle,
+            // bottomText: "'이것도 인연인데 한 대 피우겠나?'"
             );
         }
     }
