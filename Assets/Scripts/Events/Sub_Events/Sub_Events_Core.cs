@@ -14,7 +14,7 @@ namespace TextGame.Events.Shallow_Dream
 
             switch (eventIndex)
             {
-                case 1: return Sub_Event_01_Floret();
+                //case 1: return Sub_Event_01_Floret();
                 case 2: return Sub_Event_02_Butterfly(player);
                 case 3: return Sub_Event_03_Road_Of_Past(player);
                 case 4: return Sub_Event_04_entireness_orb(player);
@@ -25,9 +25,9 @@ namespace TextGame.Events.Shallow_Dream
                 case 9: return Sub_Event_09_Violin(player);
                 case 10: return Sub_Event_10_Picture(player);
                 case 11: return Sub_Event_11_Kraken(player);
-                case 12: return Sub_Event_12_Smoker(player);
+                //case 12: return Sub_Event_12_Smoker(player);
                 case 13: return Sub_Event_13_Suicide_Theory();
-                default: return Sub_Event_01_Floret();
+                default: return Sub_Event_02_Butterfly(player);
             }
         }
     }

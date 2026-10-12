@@ -5,15 +5,15 @@ using TextGame.Core;
 
 namespace TextGame.Events.Explore.Desert
 {
-    public static class Desert_Area
+    public static class Theme_Desert
     {
-        private static List<Func<Player, EventStep>> desertEventPool = new();
+        private static List<Func<Player, EventStep>> Event_Desert = new();
 
-        public static void Initialize_Pool()
+        public static void Event_Pool()
         {
-            desertEventPool.Clear();
+            Event_Desert.Clear();
             // 옮겨온 작은 꽃 이벤트 등록
-            desertEventPool.Add(Desert_01_Floret.Get_Step);
+            Event_Desert.Add(Desert_01_Floret.Get_Step);
         }
 
         public static EventStep Enter_Area(Player player)
@@ -45,14 +45,14 @@ namespace TextGame.Events.Explore.Desert
 
         private static EventStep Get_Random_Desert_Event(Player player)
         {
-            if (desertEventPool.Count == 0)
+            if (Event_Desert.Count == 0)
             {
-                Initialize_Pool();
+                Event_Pool();
             }
 
-            int randomIndex = UnityEngine.Random.Range(0, desertEventPool.Count);
-            var selectedFunc = desertEventPool[randomIndex];
-            desertEventPool.RemoveAt(randomIndex); // 1회성 등장 보장
+            int randomIndex = UnityEngine.Random.Range(0, Event_Desert.Count);
+            var selectedFunc = Event_Desert[randomIndex];
+            Event_Desert.RemoveAt(randomIndex); // 1회성 등장 보장
 
             return selectedFunc.Invoke(player);
         }

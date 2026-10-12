@@ -13,7 +13,7 @@ namespace TextGame.Events.Explore
         private static void Initialize_Areas()
         {
             areaList.Clear();
-            areaList.Add(Desert_Area.Enter_Area);
+            areaList.Add(Theme_Desert.Enter_Area);
         }
 
         public static EventStep Random_Explore(Player player)
