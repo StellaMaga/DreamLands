@@ -31,13 +31,14 @@ public class GameManager : MonoBehaviour
     public Player player;
 
     private Sprite currentBgSprite = null;
+    private Coroutine scrollCoroutine = null;
 
     [Header("테마 상태")]
     public ExplorationState currentState = ExplorationState.Normal;
     public ThemeType currentTheme = ThemeType.None;
 
     /// <summary>
-    /// PrologueManager 등 외부에서 호출하는 진입점 (CS1061 해결)
+    /// 외부 진입점
     /// </summary>
     public void Game_Start(Player customPlayer)
     {
@@ -45,7 +46,7 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 1. 프롤로그 및 2. [메인: 얕은 꿈] 시작
+    /// 메인 시작
     /// </summary>
     public void Start_Game(Player customPlayer)
     {
@@ -68,7 +69,7 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 메인 대기 UI 출력 (외부 이벤트 종료 시 복귀점)
+    /// 메인 대기 UI 복귀
     /// </summary>
     public void Show_Main_UI()
     {
@@ -79,7 +80,7 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 기본 탐험 대기 버튼 노출 (상태 유지)
+    /// 기본 탐험 대기 버튼
     /// </summary>
     public void Show_Main_Buttons()
     {
@@ -91,13 +92,12 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 플레이어 사망 판정 (Player.cs의 IsDead 및 3대 기본 스탯 고갈 체크)
+    /// 플레이어 사망 판정
     /// </summary>
     public bool CheckPlayerDeath()
     {
         if (player == null) return false;
 
-        // 명시적 Die() 호출 또는 3대 기본 스탯(정신력, 이성, 의지) 고갈 판정
         bool isZeroStats = (player.Mental <= 0 || player.Sanity <= 0 || player.Will <= 0);
 
         if (player.IsDead || isZeroStats)
@@ -115,7 +115,7 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 미니 이벤트 전용 로그 (한 줄 가볍게 누적)
+    /// 미니 이벤트 전용 로그
     /// </summary>
     public void Append_Mini_Log(string text)
     {
@@ -123,25 +123,22 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 서브/메인/테마 이벤트 실행 (배경 체크 + 삽화 누적 + 지문 누적 + 선택지 교체)
+    /// 서브/메인/테마 이벤트 실행
     /// </summary>
     public void Execute_EventStep(EventStep step)
     {
         if (step == null) return;
 
-        // 배경 변경 규칙 적용
         if (step.bgImage != null)
         {
             Change_Background(step.bgImage);
         }
 
-        // 본문 상단 삽화 출력 (소문자 필드 반영)
         if (step.illustration != null && step.imgPos == IllustrationPosition.Top)
         {
             Append_Image(step.illustration);
         }
 
-        // 지문 누적
         string content = "";
         if (!string.IsNullOrEmpty(step.Title))
         {
@@ -149,7 +146,6 @@ public class GameManager : MonoBehaviour
         }
         content += step.BodyText;
 
-        // 본문 중간 삽화 출력 (소문자 필드 반영)
         if (step.illustration != null && step.imgPos == IllustrationPosition.Middle)
         {
             Append_Text(content);
@@ -168,7 +164,6 @@ public class GameManager : MonoBehaviour
             Append_Text(content);
         }
 
-        // 선택지 버튼 바인딩
         Set_Buttons(
             step.Option1Text, step.Option2Text, step.Option3Text,
             () => { step.OnOption1?.Invoke(player, this); Status_UI(); },
@@ -178,7 +173,7 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 배경 변경 처리 (동일한 배경이면 갱신 생략)
+    /// 배경 변경
     /// </summary>
     public void Change_Background(Sprite newBg)
     {
@@ -193,42 +188,59 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 텍스트 로그 한 줄 인스턴스화
+    /// 텍스트 로그 생성 및 맨 아래 스크롤
     /// </summary>
     public void Append_Text(string text)
     {
-        if (string.IsNullOrEmpty(text)) return;
+        if (string.IsNullOrEmpty(text) || textLogPrefab == null || storyContentTransform == null) return;
+
         GameObject obj = Instantiate(textLogPrefab, storyContentTransform);
         TextMeshProUGUI tmp = obj.GetComponent<TextMeshProUGUI>();
         if (tmp != null) tmp.text = text;
+
         Scroll_To_Bottom();
     }
 
     /// <summary>
-    /// 삽화 로그 인스턴스화
+    /// 삽화 로그 생성 및 맨 아래 스크롤
     /// </summary>
     public void Append_Image(Sprite sprite)
     {
-        if (sprite == null || imageLogPrefab == null) return;
+        if (sprite == null || imageLogPrefab == null || storyContentTransform == null) return;
+
         GameObject obj = Instantiate(imageLogPrefab, storyContentTransform);
         Image img = obj.GetComponent<Image>();
         if (img != null) img.sprite = sprite;
+
         Scroll_To_Bottom();
     }
 
     public void Scroll_To_Bottom()
     {
-        StartCoroutine(ScrollToBottomRoutine());
+        if (scrollCoroutine != null) StopCoroutine(scrollCoroutine);
+        scrollCoroutine = StartCoroutine(ScrollToBottomRoutine());
     }
 
     private IEnumerator ScrollToBottomRoutine()
     {
+        // 1. 프레임이 끝날 때까지 대기
         yield return new WaitForEndOfFrame();
+
+        // 2. RectTransform 및 LayoutGroup 강제 재계산
+        if (storyContentTransform is RectTransform rectTransform)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
+        }
+
         Canvas.ForceUpdateCanvases();
+
+        // 3. 최하단(0f)으로 고정
         if (storyScrollRect != null)
         {
             storyScrollRect.verticalNormalizedPosition = 0f;
         }
+
+        scrollCoroutine = null;
     }
 
     public void Set_Buttons(string b1, string b2, string b3,
@@ -263,7 +275,7 @@ public class GameManager : MonoBehaviour
 
     public void Status_UI()
     {
-        // HUD 슬라이더 및 스탯 수치 갱신 로직
+        // HUD 슬라이더 및 스탯 수치 갱신
     }
 
     public void Show_Status_Popup()
