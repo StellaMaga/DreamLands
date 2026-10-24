@@ -59,12 +59,12 @@
             return false;
         }
 
-        // 4. [간섭 판정]
+        // 4. [간섭 판정] - currentHp 차감
         public static int IFN_Check(Player player, EnemyData enemy, out CoC_Result result)
         {
             result = Game_System.CoC_Check(player.Interference, 0);
-            if (result == CoC_Result.Jackpot) { enemy.maxHp -= 2; return 2; }
-            if (result == CoC_Result.Success) { enemy.maxHp -= 1; return 1; }
+            if (result == CoC_Result.Jackpot) { enemy.currentHp -= 2; return 2; }
+            if (result == CoC_Result.Success) { enemy.currentHp -= 1; return 1; }
             return 0;
         }
     }

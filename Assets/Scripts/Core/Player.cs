@@ -105,11 +105,10 @@ namespace TextGame.Core
             CauseOfDeath = deathType;
         }
 
-        //  [파생 스탯]
+        // [파생 스탯]
         public int Interference => (Will + Mental) / 2;     // 간섭(IFN)
         public int Rejection => (Will + Sanity) / 2;        // 거부(REJ)
         public int Detection => (Mental + Sanity) / 2;      // 탐지(DET)
-
 
         // [신비 및 아이템 관리 (Mystic)]
         public List<Mystic> Mystics = new List<Mystic>();
@@ -147,76 +146,15 @@ namespace TextGame.Core
 
         public void ObtainItem(Mystic mystic) => ObtainMystic(mystic);
 
-
-
-        // [지식 관리 (Knowledge)]
-        public List<Knowledge> KnowledgeList = new List<Knowledge>();
-
-        public bool HasKnowledge(string idOrName)
-        {
-            return KnowledgeList.Exists(x => x.ID == idOrName || x.Name == idOrName);
-        }
-
-        public int KnowledgeCount => KnowledgeList.Count;
-
-        // 지식 습득 (위험 지식 판정 로직 포함)
-        public void ObtainKnowledge(Knowledge knowledge, out string checkLog)
-        {
-            checkLog = "";
-            if (knowledge == null || HasKnowledge(knowledge.ID)) return;
-
-            KnowledgeList.Add(knowledge);
-
-            // 스탯 변동치 합산
-            Will += knowledge.BonusWill;
-            Sanity += knowledge.BonusSanity;
-            Mental += knowledge.BonusMental;
-            Madness += knowledge.BonusMadness;
-            Luck += knowledge.BonusLuck;
-
-            // 위험 지식일 경우 이성 체크(CoC_Check) 진행
-            if (knowledge.IsDangerous)
-            {
-                CoC_Result result = Game_System.CoC_Check(Sanity); 
-
-                if (result == CoC_Result.Jackpot || result == CoC_Result.Success)
-                {
-                    checkLog = Game_System.Cyan($"\n[이성 방어 성공] 금단의 지식 [{knowledge.Name}]의 충격을 견뎌냈습니다.");
-                }
-                else if (result == CoC_Result.Failure)
-                {
-                    int loss = knowledge.SanityLossOnFail > 0 ? knowledge.SanityLossOnFail : Game_System.Roll_D6(); 
-                    Sanity -= loss;
-                    checkLog = Game_System.Red($"\n[이성 방어 실패] 진실의 무게를 감당하지 못했습니다. (이성 -{loss})");
-                }
-                else // Fumble
-                {
-                    int loss = knowledge.SanityLossOnFail > 0 ? knowledge.SanityLossOnFail : Game_System.Roll_D6(); 
-                    int gain = knowledge.MadnessGainOnFail > 0 ? knowledge.MadnessGainOnFail : Game_System.Roll_D6(); 
-                    Sanity -= loss;
-                    Madness += gain;
-                    checkLog = Game_System.Purple($"\n[이성 판정 펌블!] 금단의 지식에 잠식당합니다! (이성 -{loss}, 광기 +{gain})");
-                }
-            }
-
-            Debug.Log(Game_System.Cyan($"[지식 습득: {knowledge.Name}]") + checkLog);
-        }
-
-        public void ObtainKnowledge(Knowledge knowledge)
-        {
-            ObtainKnowledge(knowledge, out _);
-        }
-
-
         // [생성자 및 상태 출력]
         public Player(string name, DreamInfo dream)
         {
             Name = name;
-            Alignment = dream.Title; 
+            Alignment = dream.Title;
 
-            Mental = Game_System.Roll_3D6_Times5(); 
-            Sanity = Game_System.Roll_3D6_Times5(); 
-            Will = Game_System.Roll_3D6_Times5(); 
+            Mental = Game_System.Roll_3D6_Times5();
+            Sanity = Game_System.Roll_3D6_Times5();
+            Will = Game_System.Roll_3D6_Times5();
 
             Madness = 0;
             Charm = 0;
@@ -232,8 +170,7 @@ namespace TextGame.Core
                       $"- 의지(Will) : {Will}\n" +
                       $"- 이성(Sanity) : {Sanity}\n" +
                       $"- 광기(Madness) : {Madness}\n" +
-                      $"- 소지 아이템/신비 : {Mystics.Count}개\n" +
-                      $"- 보유 지식 : {KnowledgeCount}개");
+                      $"- 소지 아이템/신비 : {Mystics.Count}개");
         }
 
         public DialogueNode[] Status_Dialogues()
@@ -243,7 +180,7 @@ namespace TextGame.Core
                 new($"[ 몽상가 {Name}의 상태 ]\n성향: {Alignment} | 자아: {Ego_LV}\n" +
                 $"정신력: {Mental} | 의지: {Will} | 이성: {Sanity}\n" +
                 $"간섭: {Interference} | 거부: {Rejection} | 탐지: {Detection}\n" +
-                $"아이템/신비: {Mystics.Count}개 | 보유 지식: {KnowledgeCount}개\n" +
+                $"아이템/신비: {Mystics.Count}개\n" +
                 $"광기: {Madness} | 별빛: {Starlight}")
             };
         }

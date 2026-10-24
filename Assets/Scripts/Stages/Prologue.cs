@@ -9,21 +9,22 @@ namespace TextGame.Core
         public string Speaker;          // 발화자
         public string Text;             // 내용
 
-        // 화자가 있는 지문
         public DialogueNode(string speaker, string text)
         {
             Speaker = Game_System.ColorSpeaker(speaker);
             Text = text;
         }
 
-        // 화자가 없는 지문
         public DialogueNode(string text)
         {
             Speaker = "";
             Text = text;
         }
     }
+}
 
+namespace TextGame.Stages
+{
     public static class Prologue
     {
         public static List<DialogueNode> Prologue_Dialogues(DreamInfo dream)
@@ -88,7 +89,7 @@ namespace TextGame.Core
 
                     당신은 무언가 잘못되었다는 것을 느꼈다.
                     서둘러 꿈에서 깨어나려 했지만 불청객의 행동이 더 빨랐다.
-                    그것은 말을 끝내자마자 발을 들어 바닥을 강하게 내려쳤다.
+                    것은 말을 끝내자마자 발을 들어 바닥을 강하게 내려쳤다.
                     """),
 
                 // 6. 꿈의 붕괴 및 드림랜드로의 추락
@@ -98,7 +99,7 @@ namespace TextGame.Core
                     꿈에 균열이 생긴다.
                     균열은 점점 빠른 속도로 퍼져나가며 꿈을 무너뜨린다.
                     무너지는 꿈 너머에는 온갖 비현실적인 것이 뒤섞인 풍경이 눈에 들어온다.
-                    그것은 수많은 인간의 꿈으로 이루어진 세계였다.
+                    것은 수많은 인간의 꿈으로 이루어진 세계였다.
 
                     '그리고 부디 바라건대.'
                     '더 깊은 곳으로 내려와 다시 만날 수 있기를.'

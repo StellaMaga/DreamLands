@@ -1,382 +1,276 @@
+using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using TextGame.Core;
 using TextGame.Stages;
-using TextGame.Events.Shallow_Dream;
+
+public enum ExplorationState { Normal, InTheme }
+public enum ThemeType { None, Desert, City }
 
 public class GameManager : MonoBehaviour
 {
-    // [1. UI 패널 및 씬 오브젝트 관리]
-    [Header("UI 패널 제어")]
-    [Tooltip("프롤로그 지문 및 이름 입력이 진행되는 패널")]
-    public GameObject storyPanel;
+    [Header("UI 연결")]
+    public ScrollRect storyScrollRect;
+    public Transform storyContentTransform; // Viewport > Content
+    public Image backgroundImage;          // 전체 배경 이미지
+    public GameObject statusPopupPanel;     // 상태 팝업 패널
 
-    [Tooltip("본 게임 탐험 및 전투가 진행되는 메인 패널")]
-    public GameObject mainGamePanel;
+    [Header("프리팹")]
+    public GameObject textLogPrefab;
+    public GameObject imageLogPrefab;
 
-    [Tooltip("이벤트에 따라 전체 배경이 교체되는 Image (단색 배경용)")]
-    public Image backgroundImage;
+    [Header("하단 고정 버튼")]
+    public GameObject button1;
+    public GameObject button2;
+    public GameObject button3;
 
+    // 인스펙터 직렬화 경고(UAC1001) 방지
+    [NonSerialized]
+    public Player player;
 
-    // [2. 상단 HUD 상태창 박스 (게이지 바 & 텍스트)]
-    [Header("상단 HUD 상태창")]
-    public TextMeshProUGUI playerNameText;
-    public Slider mentalSlider;
-    public TextMeshProUGUI mentalValueText;
-    public Slider sanitySlider;
-    public TextMeshProUGUI sanityValueText;
-    public TextMeshProUGUI extraStatusText;
-    public TextMeshProUGUI statusText;
+    private Sprite currentBgSprite = null;
 
+    [Header("테마 상태")]
+    public ExplorationState currentState = ExplorationState.Normal;
+    public ThemeType currentTheme = ThemeType.None;
 
-    // [3. 상세 상태창 팝업 카드 UI]
-    [Header("상세 상태창 팝업 카드")]
-    public GameObject statusPopupPanel;
-    public TextMeshProUGUI statusCardText;
-
-
-    // =========================================================================
-    // [4. 인게임 본문 연출 UI (동적 삽화 & 텍스트)]
-    // =========================================================================
-    [Header("인게임 동적 본문 UI")]
-    [Tooltip("상단 스토리 지문 출력창")]
-    public TextMeshProUGUI dialogueText;
-
-    [Tooltip("텍스트 사이/상/하단에 유동적으로 삽입되는 삽화 이미지")]
-    public Image eventIllustration;
-
-    [Tooltip("삽화 아래에 배치되는 하단 대사/지문창 (Middle 모드 전용)")]
-    public TextMeshProUGUI bottomDialogueText;
-
-    [Header("선택지 버튼 (MainGamePanel 하위)")]
-    public GameObject option1Button;
-    public GameObject option2Button;
-    public GameObject option3Button;
-
-
-    // [5. 외부 시스템 및 엔딩 매니저]
-    [Header("엔딩 시스템")]
-    public Ending endingManager;
-
-
-    // [6. 탐험 시스템 진행 변수 (State)]
-    private Player player;
-    private int event_Count = 0;
-    private int cheshire_Count = 0;
-    private int cheshireChance = 13;
-    private bool met_WhiteRabbit = false;
-
-
-    void Start()
-    {
-        if (statusPopupPanel != null)
-        {
-            statusPopupPanel.SetActive(false);
-        }
-    }
-
+    /// <summary>
+    /// PrologueManager 등 외부에서 호출하는 진입점 (CS1061 해결)
+    /// </summary>
     public void Game_Start(Player customPlayer)
     {
+        Start_Game(customPlayer);
+    }
+
+    /// <summary>
+    /// 1. 프롤로그 및 2. [메인: 얕은 꿈] 시작
+    /// </summary>
+    public void Start_Game(Player customPlayer)
+    {
         this.player = customPlayer;
+        currentState = ExplorationState.Normal;
+        currentTheme = ThemeType.None;
+        Stage_ShallowDream.Initialize();
 
-        if (storyPanel != null) storyPanel.SetActive(false);
-        if (mainGamePanel != null) mainGamePanel.SetActive(true);
-        if (statusPopupPanel != null) statusPopupPanel.SetActive(false);
+        // 얕은 꿈 시작 배경 로드
+        Sprite fogBg = Resources.Load<Sprite>("Backgrounds/Fog_Dream");
+        Change_Background(fogBg);
 
-        Status_UI();
+        Append_Text("""
+            <b>[ 메인 : 얕은 꿈 ]</b>
+            사방이 짙은 안개로 가득 찬 낯선 대지 위에서 눈을 떴다.
+            어디선가 스산한 바람이 불어오며, 당신의 여정이 시작됨을 알린다.
+            """);
+
         Show_Main_UI();
     }
 
     /// <summary>
-    /// 메인 탐험 대기 화면 (앞으로 가기 / 상태 확인)
+    /// 메인 대기 UI 출력 (외부 이벤트 종료 시 복귀점)
     /// </summary>
     public void Show_Main_UI()
     {
         if (CheckPlayerDeath()) return;
+        if (statusPopupPanel != null) statusPopupPanel.SetActive(false);
 
-        if (statusPopupPanel != null)
-            statusPopupPanel.SetActive(false);
-
-        // 대기 화면에서는 삽화 및 하단 텍스트 숨김
-        if (eventIllustration != null) eventIllustration.gameObject.SetActive(false);
-        if (bottomDialogueText != null) bottomDialogueText.gameObject.SetActive(false);
-
-        if (dialogueText != null)
-        {
-            dialogueText.gameObject.SetActive(true);
-            dialogueText.transform.SetSiblingIndex(0);
-            dialogueText.text = $"[ 제 1장 : 얕은 꿈 탐험 중... ]\n" +
-                                $"현재 이벤트 진행: {event_Count}회차\n\n" +
-                                $"[1. 앞으로 나아간다]\n" +
-                                $"[2. 잠시 눈을 감는다 (상태 확인)]";
-        }
-
-        Set_Buttons("1. 앞으로 나아간다", "2. 상태 확인", null, Click_Advance, Click_Status, null);
+        Show_Main_Buttons();
     }
 
-    private void Click_Advance()
+    /// <summary>
+    /// 기본 탐험 대기 버튼 노출 (상태 유지)
+    /// </summary>
+    public void Show_Main_Buttons()
     {
-        Status_UI();
-
-        EventStep currentStep = Shallow_Dream.Next_Event(
-            player,
-            ref event_Count,
-            ref cheshire_Count,
-            ref cheshireChance,
-            ref met_WhiteRabbit
-        );
-
-        Execute_EventStep(currentStep);
-    }
-
-    private void Click_Status()
-    {
-        if (player == null) return;
-
-        if (statusPopupPanel != null)
-            statusPopupPanel.SetActive(true);
-
-        if (statusCardText != null)
-        {
-            string madnessColor = player.Madness > 0 ? "#FF6B6B" : "#A0AEC0";
-
-            statusCardText.text =
-                $"<b>[ 신상 정보 ]</b>\n" +
-                $"  이름  :  {player.Name}\n" +
-                $"  계통  :  미지의 탐험가\n\n" +
-                $"<b>[ 정신 및 심상 ]</b>\n" +
-                $"  정신력 :  {player.Mental} / 100\n" +
-                $"  이성치 :  {player.Sanity} / 100\n" +
-                $"  광기침식:  <color={madnessColor}>{player.Madness}</color>\n\n" +
-                $"<b>[ 잠재 역량 ]</b>\n" +
-                $"  의지  :  {player.Will}\n" +
-                $"  자아  :  {player.Ego}\n" +
-                $"  보유 별빛: ★ {player.Starlight}";
-        }
-
-        Set_Buttons("닫기 / 돌아가기", null, null, Close_StatusPopup, null, null);
-    }
-
-    private void Close_StatusPopup()
-    {
-        if (statusPopupPanel != null)
-            statusPopupPanel.SetActive(false);
-
-        Show_Main_UI();
-    }
-
-
-    // =========================================================================
-    // [9. EventStep 실행 및 화면 렌더링]
-    // =========================================================================
-    public void Execute_EventStep(EventStep step)
-    {
-        if (statusPopupPanel != null)
-            statusPopupPanel.SetActive(false);
-
-        // 1. 전체 배경 교체 (필요 시)
-        if (backgroundImage != null && step.bgImage != null)
-        {
-            backgroundImage.sprite = step.bgImage;
-            backgroundImage.color = Color.white;
-        }
-
-        // 2. 본문 및 삽화 동적 배치
-        Render_Content(step);
-
-        // 3. 버튼 세팅
-        Set_Buttons(
-            step.Option1Text,
-            step.Option2Text,
-            step.Option3Text,
-            () => {
-                step.OnOption1?.Invoke(player, this);
-                Status_UI();
-            },
-            () => {
-                step.OnOption2?.Invoke(player, this);
-                Status_UI();
-            },
-            () => {
-                step.OnOption3?.Invoke(player, this);
-                Status_UI();
-            }
+        Set_Buttons("1. 앞으로 나아간다", "2. 상태 확인", null,
+            () => Stage_ShallowDream.Next_Turn(player, this),
+            Show_Status_Popup,
+            null
         );
     }
 
     /// <summary>
-    /// 위치 옵션(IllustrationPosition)에 따라 삽화와 지문 순서를 실시간 정렬
+    /// 플레이어 사망 판정 (Player.cs의 IsDead 및 3대 기본 스탯 고갈 체크)
     /// </summary>
-    private void Render_Content(EventStep step)
-    {
-        bool hasImage = (step.illustration != null && step.imgPos != IllustrationPosition.None && eventIllustration != null);
-
-        if (hasImage)
-        {
-            eventIllustration.gameObject.SetActive(true);
-            eventIllustration.sprite = step.illustration;
-            eventIllustration.color = Color.white;
-
-            switch (step.imgPos)
-            {
-                case IllustrationPosition.Top:
-                    // [삽화] -> [본문 텍스트]
-                    eventIllustration.transform.SetSiblingIndex(0);
-                    dialogueText.transform.SetSiblingIndex(1);
-
-                    dialogueText.gameObject.SetActive(true);
-                    dialogueText.text = $"{step.Title}\n\n{step.BodyText}";
-
-                    if (bottomDialogueText != null)
-                        bottomDialogueText.gameObject.SetActive(false);
-                    break;
-
-                case IllustrationPosition.Middle:
-                    // [상단 텍스트] -> [삽화] -> [하단 텍스트] (고양이 상인 형태)
-                    dialogueText.transform.SetSiblingIndex(0);
-                    eventIllustration.transform.SetSiblingIndex(1);
-
-                    dialogueText.gameObject.SetActive(true);
-                    dialogueText.text = $"{step.Title}\n\n{step.BodyText}";
-
-                    if (bottomDialogueText != null)
-                    {
-                        bottomDialogueText.transform.SetSiblingIndex(2);
-                        bottomDialogueText.gameObject.SetActive(!string.IsNullOrEmpty(step.BottomText));
-                        bottomDialogueText.text = step.BottomText;
-                    }
-                    break;
-
-                case IllustrationPosition.Bottom:
-                    // [본문 텍스트] -> [삽화]
-                    dialogueText.transform.SetSiblingIndex(0);
-                    eventIllustration.transform.SetSiblingIndex(1);
-
-                    dialogueText.gameObject.SetActive(true);
-                    dialogueText.text = $"{step.Title}\n\n{step.BodyText}";
-
-                    if (bottomDialogueText != null)
-                        bottomDialogueText.gameObject.SetActive(false);
-                    break;
-            }
-        }
-        else
-        {
-            // 삽화가 없는 순수 텍스트 이벤트
-            if (eventIllustration != null) eventIllustration.gameObject.SetActive(false);
-            if (bottomDialogueText != null) bottomDialogueText.gameObject.SetActive(false);
-
-            if (dialogueText != null)
-            {
-                dialogueText.gameObject.SetActive(true);
-                dialogueText.transform.SetSiblingIndex(0);
-                dialogueText.text = $"{step.Title}\n\n{step.BodyText}";
-            }
-        }
-    }
-
-
-    // =========================================================================
-    // [10. 상단 HUD & 버튼 헬퍼]
-    // =========================================================================
-    public void Status_UI()
-    {
-        if (player == null) return;
-
-        if (playerNameText != null) playerNameText.text = $"[{player.Name}]";
-
-        if (mentalSlider != null)
-        {
-            mentalSlider.maxValue = 100;
-            mentalSlider.value = Mathf.Clamp(player.Mental, 0, mentalSlider.maxValue);
-        }
-        if (mentalValueText != null) mentalValueText.text = $"{player.Mental}";
-
-        if (sanitySlider != null)
-        {
-            sanitySlider.maxValue = 100;
-            sanitySlider.value = Mathf.Clamp(player.Sanity, 0, sanitySlider.maxValue);
-        }
-        if (sanityValueText != null) sanityValueText.text = $"{player.Sanity}";
-
-        if (extraStatusText != null)
-        {
-            string madnessColor = player.Madness > 0 ? "#FF5555" : "#AAAAAA";
-            extraStatusText.text = $"Will: {player.Will} | <color={madnessColor}>Madness: {player.Madness}</color> | ★ {player.Starlight}";
-        }
-
-        if (statusText != null)
-        {
-            statusText.text = $"[{player.Name}] MT: {player.Mental} | Will: {player.Will} | SAN: {player.Sanity} | Madness: {player.Madness}";
-        }
-    }
-
-    private void Set_Buttons(string opt1Text, string opt2Text, string opt3Text,
-                             UnityEngine.Events.UnityAction action1,
-                             UnityEngine.Events.UnityAction action2,
-                             UnityEngine.Events.UnityAction action3)
-    {
-        option1Button.SetActive(opt1Text != null);
-        if (opt1Text != null)
-        {
-            option1Button.GetComponentInChildren<TextMeshProUGUI>().text = opt1Text;
-            Button b1 = option1Button.GetComponent<Button>();
-            b1.onClick.RemoveAllListeners();
-            if (action1 != null) b1.onClick.AddListener(action1);
-        }
-
-        option2Button.SetActive(opt2Text != null);
-        if (opt2Text != null)
-        {
-            option2Button.GetComponentInChildren<TextMeshProUGUI>().text = opt2Text;
-            Button b2 = option2Button.GetComponent<Button>();
-            b2.onClick.RemoveAllListeners();
-            if (action2 != null) b2.onClick.AddListener(action2);
-        }
-
-        if (option3Button != null)
-        {
-            option3Button.SetActive(opt3Text != null);
-            if (opt3Text != null)
-            {
-                option3Button.GetComponentInChildren<TextMeshProUGUI>().text = opt3Text;
-                Button b3 = option3Button.GetComponent<Button>();
-                b3.onClick.RemoveAllListeners();
-                if (action3 != null) b3.onClick.AddListener(action3);
-            }
-        }
-    }
-
     public bool CheckPlayerDeath()
     {
         if (player == null) return false;
 
-        if (player.IsDead || player.Mental <= 0 || player.Sanity <= 0 || player.Sanity <= player.Madness)
+        // 명시적 Die() 호출 또는 3대 기본 스탯(정신력, 이성, 의지) 고갈 판정
+        bool isZeroStats = (player.Mental <= 0 || player.Sanity <= 0 || player.Will <= 0);
+
+        if (player.IsDead || isZeroStats)
         {
-            if (!player.IsDead)
+            Append_Text("<color=#E53935><b>더 이상 앞으로 나아갈 수 없습니다... 여정이 끝났습니다.</b></color>");
+            Set_Buttons("처음으로 돌아가기", null, null, () =>
             {
-                if (player.Mental <= 0) player.Die(DeathType.Mental_Zero);
-                else if (player.Sanity <= 0) player.Die(DeathType.Sanity_Zero);
-                else if (player.Sanity <= player.Madness) player.Die(DeathType.Madness_Over);
-            }
-
-            if (endingManager != null)
-            {
-                endingManager.Show_Ending(player);
-            }
-            else
-            {
-                if (eventIllustration != null) eventIllustration.gameObject.SetActive(false);
-                if (bottomDialogueText != null) bottomDialogueText.gameObject.SetActive(false);
-
-                dialogueText.text = "<color=red>[ GAME OVER ]</color>\n\n정신이 완전히 붕괴되어 차가운 대지 위로 쓰러졌습니다...";
-                option1Button.SetActive(false);
-                option2Button.SetActive(false);
-                if (option3Button != null) option3Button.SetActive(false);
-            }
+                UnityEngine.SceneManagement.SceneManager.LoadScene(
+                    UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
+                );
+            }, null, null);
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// 미니 이벤트 전용 로그 (한 줄 가볍게 누적)
+    /// </summary>
+    public void Append_Mini_Log(string text)
+    {
+        Append_Text($"<color=#B0BEC5>▶ {text}</color>");
+    }
+
+    /// <summary>
+    /// 서브/메인/테마 이벤트 실행 (배경 체크 + 삽화 누적 + 지문 누적 + 선택지 교체)
+    /// </summary>
+    public void Execute_EventStep(EventStep step)
+    {
+        if (step == null) return;
+
+        // 배경 변경 규칙 적용
+        if (step.bgImage != null)
+        {
+            Change_Background(step.bgImage);
+        }
+
+        // 본문 상단 삽화 출력 (소문자 필드 반영)
+        if (step.illustration != null && step.imgPos == IllustrationPosition.Top)
+        {
+            Append_Image(step.illustration);
+        }
+
+        // 지문 누적
+        string content = "";
+        if (!string.IsNullOrEmpty(step.Title))
+        {
+            content += $"<b>{step.Title}</b>\n";
+        }
+        content += step.BodyText;
+
+        // 본문 중간 삽화 출력 (소문자 필드 반영)
+        if (step.illustration != null && step.imgPos == IllustrationPosition.Middle)
+        {
+            Append_Text(content);
+            Append_Image(step.illustration);
+            if (!string.IsNullOrEmpty(step.BottomText))
+            {
+                Append_Text(step.BottomText);
+            }
+        }
+        else
+        {
+            if (!string.IsNullOrEmpty(step.BottomText))
+            {
+                content += $"\n\n{step.BottomText}";
+            }
+            Append_Text(content);
+        }
+
+        // 선택지 버튼 바인딩
+        Set_Buttons(
+            step.Option1Text, step.Option2Text, step.Option3Text,
+            () => { step.OnOption1?.Invoke(player, this); Status_UI(); },
+            () => { step.OnOption2?.Invoke(player, this); Status_UI(); },
+            () => { step.OnOption3?.Invoke(player, this); Status_UI(); }
+        );
+    }
+
+    /// <summary>
+    /// 배경 변경 처리 (동일한 배경이면 갱신 생략)
+    /// </summary>
+    public void Change_Background(Sprite newBg)
+    {
+        if (newBg == null || newBg == currentBgSprite) return;
+
+        currentBgSprite = newBg;
+        if (backgroundImage != null)
+        {
+            backgroundImage.sprite = newBg;
+            backgroundImage.color = Color.white;
+        }
+    }
+
+    /// <summary>
+    /// 텍스트 로그 한 줄 인스턴스화
+    /// </summary>
+    public void Append_Text(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+        GameObject obj = Instantiate(textLogPrefab, storyContentTransform);
+        TextMeshProUGUI tmp = obj.GetComponent<TextMeshProUGUI>();
+        if (tmp != null) tmp.text = text;
+        Scroll_To_Bottom();
+    }
+
+    /// <summary>
+    /// 삽화 로그 인스턴스화
+    /// </summary>
+    public void Append_Image(Sprite sprite)
+    {
+        if (sprite == null || imageLogPrefab == null) return;
+        GameObject obj = Instantiate(imageLogPrefab, storyContentTransform);
+        Image img = obj.GetComponent<Image>();
+        if (img != null) img.sprite = sprite;
+        Scroll_To_Bottom();
+    }
+
+    public void Scroll_To_Bottom()
+    {
+        StartCoroutine(ScrollToBottomRoutine());
+    }
+
+    private IEnumerator ScrollToBottomRoutine()
+    {
+        yield return new WaitForEndOfFrame();
+        Canvas.ForceUpdateCanvases();
+        if (storyScrollRect != null)
+        {
+            storyScrollRect.verticalNormalizedPosition = 0f;
+        }
+    }
+
+    public void Set_Buttons(string b1, string b2, string b3,
+                             UnityEngine.Events.UnityAction a1,
+                             UnityEngine.Events.UnityAction a2,
+                             UnityEngine.Events.UnityAction a3)
+    {
+        Setup_Button(button1, b1, a1);
+        Setup_Button(button2, b2, a2);
+        Setup_Button(button3, b3, a3);
+    }
+
+    private void Setup_Button(GameObject btnObj, string label, UnityEngine.Events.UnityAction action)
+    {
+        if (btnObj == null) return;
+        bool active = !string.IsNullOrEmpty(label);
+        btnObj.SetActive(active);
+
+        if (active)
+        {
+            TextMeshProUGUI txt = btnObj.GetComponentInChildren<TextMeshProUGUI>();
+            if (txt != null) txt.text = label;
+
+            Button btn = btnObj.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.onClick.RemoveAllListeners();
+                if (action != null) btn.onClick.AddListener(action);
+            }
+        }
+    }
+
+    public void Status_UI()
+    {
+        // HUD 슬라이더 및 스탯 수치 갱신 로직
+    }
+
+    public void Show_Status_Popup()
+    {
+        if (statusPopupPanel != null)
+        {
+            statusPopupPanel.SetActive(!statusPopupPanel.activeSelf);
+        }
     }
 }

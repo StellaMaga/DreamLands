@@ -6,7 +6,7 @@ using TextGame.Events.Explore.Desert;
 
 namespace TextGame.Events.Explore
 {
-    public static class Explore_Manager
+    public static class Theme_Manager
     {
         private static List<Func<Player, EventStep>> areaList = new();
 

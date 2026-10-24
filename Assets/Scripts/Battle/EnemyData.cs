@@ -12,25 +12,27 @@ namespace TextGame.Core
         [Header("스탯")]
         [Range(1, 100)] public int detection = 40;
         public int maxHp = 2;
+        [HideInInspector] public int currentHp; // 런타임 현재 체력
         public int damage = 5;
 
         [Header("특수 기믹 (EnemyGimmick 에셋 등록)")]
         public EnemyGimmick gimmick;
 
         [Header("상황별 고유 지문")]
-        [TextArea(2, 4)] public string encounterText;  // 최초 조우 지문
-        [TextArea(2, 4)] public string ambushText;     // 탐지 실패(기습) 지문
-        [TextArea(2, 4)] public string attackText;     // 적 공격 시 지문
-        [TextArea(2, 4)] public string hitText;        // 적 피격 시 지문
-        [TextArea(2, 4)] public string deathText;      // 적 처치(사망) 지문
+        [TextArea(2, 4)] public string encounterText;
+        [TextArea(2, 4)] public string ambushText;
+        [TextArea(2, 4)] public string attackText;
+        [TextArea(2, 4)] public string hitText;
+        [TextArea(2, 4)] public string deathText;
 
-        // 런타임용 복제본 생성
+        // 런타임용 인스턴스 생성 시 현재 체력을 최대 체력으로 동기화
         public EnemyData CreateInstance()
         {
-            return Instantiate(this);
+            EnemyData clone = Instantiate(this);
+            clone.currentHp = clone.maxHp;
+            return clone;
         }
 
-        // 해당 타이밍에 등록된 기믹이 있는지 검사하고 발동
         public string CheckAndTriggerGimmick(GimmickTriggerTime timing, Player player)
         {
             if (gimmick != null && gimmick.triggerTime == timing)

@@ -3,8 +3,9 @@ using TMPro;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using TextGame.Core;
+using TextGame.Stages; // Prologue 클래스 참조용
 
-namespace TextGame.Core
+namespace TextGame.Managers
 {
     public class PrologueManager : MonoBehaviour
     {
@@ -42,7 +43,6 @@ namespace TextGame.Core
             ShowCurrentNode();
         }
 
-        // 대사 출력 함수
         private void ShowCurrentNode()
         {
             if (currentDialogues == null || currentIndex >= currentDialogues.Count)
@@ -68,17 +68,14 @@ namespace TextGame.Core
             }
         }
 
-        // [다음 ▶] 버튼 클릭
         private void OnClick_Next()
         {
             currentIndex++;
             ShowCurrentNode();
         }
 
-        // 프롤로그 종료 및 본 게임 진입
         private void FinishPrologue()
         {
-            // 이름 입력 없이 기본 플레이어 생성 ("탐험가" 또는 원하는 기본 명칭)
             Player newPlayer = new Player("탐험가", selectedDream);
 
             if (storyPanel != null)
