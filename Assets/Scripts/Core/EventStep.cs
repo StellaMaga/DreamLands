@@ -19,6 +19,8 @@ namespace TextGame.Core
     /// </summary>
     public class EventStep
     {
+        
+        public EventStep() { }  // 매개변수 없는 기본 생성자
         public string Title;
         public string BodyText;
         public string BottomText; // Middle 배치 시 삽화 아래에 들어갈 텍스트

@@ -24,9 +24,9 @@ namespace TextGame.Stages
         {
             TurnCount++;
 
-            if (TurnCount == 13)
+            if (TurnCount == 99)
             {
-                // 13턴 메인 이벤트 자리
+                // 99턴 메인 이벤트 자리
                 return;
             }
 
@@ -35,7 +35,7 @@ namespace TextGame.Stages
             // 1. 테마 진입 (10% 이하: 91 ~ 100)
             if (roll > 90)
             {
-                EventStep themeStep = City_Area.Enter_Area(player);
+                EventStep themeStep = City_Area.Enter_Area(player, mgr);
                 mgr.Execute_EventStep(themeStep);
             }
             // 2. 1회성 서브 이벤트 (20%: 71 ~ 90) - 풀에 내용이 있을 때만
